@@ -12,4 +12,4 @@ We will be deploying a demo application to ECS Fargate.
 
 Below is a diagram of the environment we will be building:
 
-![blue-green-demo](/images/blue-green-demo.png)
+![blue-green-meet-application](/images/blue-green-meet-application.png)
