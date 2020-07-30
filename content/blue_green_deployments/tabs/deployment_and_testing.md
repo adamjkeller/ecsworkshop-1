@@ -19,7 +19,6 @@ Once **Step 2:** is completed, you can test the application on the test port `80
 
 #### After Step 3, production port `80` will show green deployment
 
-* This completes the blue/green deployment
 * We had a seamless traffic shifting from blue to green using `CodeDeployDefault.ECSLinear10PercentEvery1Minutes`
 * This shifts 10 percent of traffic every minute until all traffic is shifted
 * We have completed a successful Blue/Green deployment
