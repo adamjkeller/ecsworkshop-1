@@ -34,14 +34,14 @@ Similar to the previous environments, we follow the same format to build the env
 
 ```typescript
 // ECR repository for the docker images
-const ecrRepo = new ecr.Repository(this, 'demo-app', {
+const ecrRepo = new ecr.Repository(this, 'demoAppEcrRepo', {
     imageScanOnPush: true
 });
 
 // CodeCommit repository for storing the source code
-const codeRepo = new codeCommit.Repository(this, "demoAppRepo", {
-    repositoryName: "demo-app",
-    description: "Demo app hosted on NGINX"
+const codeRepo = new codeCommit.Repository(this, "demoAppCodeRepo", {
+    repositoryName: BlueGreenUsingEcsStack.ECS_APP_NAME,
+    description: "Demo application hosted on NGINX"
 });
 ```
 
@@ -51,7 +51,7 @@ const codeRepo = new codeCommit.Repository(this, "demoAppRepo", {
 // Creating the code build project
 const demoAppCodeBuild = new codeBuild.Project(this, "demoAppCodeBuild", {
     role: codeBuildServiceRole,
-    description: "Code build project for the demo-app",
+    description: "Code build project for the demo application",
     environment: {
         buildImage: codeBuild.LinuxBuildImage.STANDARD_4_0,
         computeType: ComputeType.SMALL,
@@ -65,8 +65,8 @@ const demoAppCodeBuild = new codeBuild.Project(this, "demoAppCodeBuild", {
                 value: ecsTaskRole.roleArn,
                 type: BuildEnvironmentVariableType.PLAINTEXT
             },
-            TASK_DEFN_ARN: {
-                value: taskDefinition.taskDefinitionArn,
+            TASK_FAMILY: {
+                value: BlueGreenUsingEcsStack.ECS_TASK_FAMILY_NAME,
                 type: BuildEnvironmentVariableType.PLAINTEXT
             }
         }
@@ -172,7 +172,9 @@ new CustomResource(this, 'customEcsDeploymentGroup', {
         TestListenerArn: albTestListener.listenerArn,
         EcsClusterName: cluster.clusterName,
         EcsServiceName: demoAppService.serviceName,
-        TerminationWaitTime: BlueGreenUsingEcsStack.ECS_TASKSET_TERMINATION_WAIT_TIME
+        TerminationWaitTime: BlueGreenUsingEcsStack.ECS_TASKSET_TERMINATION_WAIT_TIME,
+        BlueGroupAlarm: blueGroupAlarm.alarmName,
+        GreenGroupAlarm: greenGroupAlarm.alarmName,
     }
 });
 
@@ -251,8 +253,16 @@ cdk diff
 cdk deploy --require-approval never
 ```
 
-* Once the demo application deployment is complete, it's time to setup the CodeCommit repository for the Blue/Green deployment
+
 * A successful deployment will output the below values
     * `BlueGreenUsingEcsStack.ecsBlueGreenLBDns`
     * `BlueGreenUsingEcsStack.ecsBlueGreenCodeRepo`
 
+#### Exporting the Load Balancer URL
+
+```bash
+export cloudformation_outputs=$(aws cloudformation describe-stacks --stack-name BlueGreenUsingEcsStack | jq .Stacks[].Outputs)
+export load_balancer_url=$(echo $cloudformation_outputs | jq -r '.[]| select(.ExportName | contains("ecsBlueGreenLBDns"))| .OutputValue')
+```
+
+* Let's see the deployed version of the application
